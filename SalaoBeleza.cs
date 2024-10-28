@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
@@ -21,6 +21,7 @@ namespace AfroditeClasses.Models
         public List<Servico> Servicos { get; set; }
 
         public SalaoBeleza(string endereco, string nomeFantasia, DateTime horarioDeFuncionamento)
+        // Construtor que inicializa as propriedades do salão e cria listas vazias para profissionais e serviços
         {
             Endereco = endereco;
             NomeFantasia = nomeFantasia;
@@ -38,9 +39,9 @@ namespace AfroditeClasses.Models
             return true;
         }
 
-        public bool EditarProfissional(int idProfissional, Profissional profissionalAtualizado)
+        public bool EditarProfissional(int idProfissional, Profissional profissionalAtualizado)  // Método para editar as informações de um profissional, localizando-o pelo ID
         {
-            var profissional = Profissionais.Find(p => p.IdProfissional == idProfissional);
+            var profissional = Profissionais.Find(p => p.IdProfissional == idProfissional); // Busca o profissional com o ID fornecido
             if (profissional == null)
                 return false;
 
@@ -62,12 +63,12 @@ namespace AfroditeClasses.Models
             return true;
         }
 
-        public List<Profissional> ListarProfissionais()
+        public List<Profissional> ListarProfissionais() // Método para listar todos os profissionais cadastrados no salão
         {
             return Profissionais;
         }
 
-        public bool AdicionarServico(Servico servico)
+        public bool AdicionarServico(Servico servico) // Método para adicionar um serviço ao salão, verificando se ele não é nulo e se não já está na lista
         {
             if (servico == null || Servicos.Contains(servico))
                 return false;
@@ -86,8 +87,8 @@ namespace AfroditeClasses.Models
             servico.CategoriaServico = servicoAtualizado.CategoriaServico;
             servico.PrecoDoServico = servicoAtualizado.PrecoDoServico;
             servico.DescricaoServico = servicoAtualizado.DescricaoServico;
-            servico.TempoDaServico = servicoAtualizado.TempoDaServico;
-            return true;
+            servico.TempoDaServico = servicoAtualizado.TempoDaServico; // Atualiza as propriedades do serviço
+            return true; 
         }
 
         public bool RemoverServico(int idServico)
