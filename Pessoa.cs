@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -7,6 +8,7 @@ namespace AfroditeClasses.Models
 {
     public class Pessoa
     {
+        [Key] // Definindo a chave primária
         public int Id { get; set; }
 
         [Required(ErrorMessage = "O nome é obrigatório.")]
@@ -21,64 +23,90 @@ namespace AfroditeClasses.Models
         [EmailAddress(ErrorMessage = "Email inválido.")]
         public string Email { get; set; }
 
+        // A propriedade Salt armazena o valor adicional para aumentar a segurança da senha
         [Required(ErrorMessage = "A senha é obrigatória.")]
         [MinLength(8, ErrorMessage = "A senha deve ter pelo menos 8 caracteres.")]
         public string SenhaHash { get; private set; }
 
+        [NotMapped] // Essa propriedade não será mapeada para o banco de dados
+        public string Salt { get; private set; } // Usado internamente para validar a senha de forma segura
+
+        // Construtor que inicializa as propriedades básicas e chama o método SetSenha
         public Pessoa(string nome, string telefone, string email, string senha)
         {
             Nome = nome;
             Telefone = telefone;
             Email = email;
-            SenhaHash = string.Empty; // Inicializa com uma string vazia
-            SetSenha(senha); // Define a senha e valida a força dela
+            SenhaHash = string.Empty; // A senha inicia como string vazia
+            SetSenha(senha); // Chamando o método para definir a senha e gerar o hash
         }
 
-        private void SetSenha(string senha)  // Método privado SetSenha para validar e definir a senha da pessoa
+        // Método para definir a senha, verificando sua força e gerando o hash com o salt
+        private void SetSenha(string senha)
         {
-            if (!ValidarForcaDaSenha(senha)) 
-                throw new ArgumentException("A senha deve ter pelo menos 8 caracteres, com letras e números."); // Valida a força da senha e lança uma exceção se não atender aos requisitos
+            if (!SenhaEhForte(senha))
+                throw new ArgumentException("A senha deve ter pelo menos 8 caracteres, com letras e números.");
 
-            SenhaHash = GerarHashSenha(senha);  // Gera o hash da senha e armazena em SenhaHash
+            Salt = GerarSalt(); // Gerando um salt único para cada senha
+            SenhaHash = GerarHashSenha(senha, Salt); // Gerando o hash da senha usando o salt
         }
 
-        public bool ValidarSenha(string senhaDigitada) // Método para validar se uma senha digitada corresponde ao hash da senha armazenada
+        // Método para validar se a senha digitada corresponde ao hash armazenado
+        public bool ValidarSenha(string senhaDigitada)
         {
-            string hashDigitado = GerarHashSenha(senhaDigitada);
-            return hashDigitado == SenhaHash; // Retorna true se os hashes coincidirem
+            string hashDigitado = GerarHashSenha(senhaDigitada, Salt);
+            return hashDigitado == SenhaHash;
         }
 
-        public static bool ValidarForcaDaSenha(string senha) // Método estático para validar a força da senha (deve conter letras e números e ter no mínimo 8 caracteres)
+        // Método estático que verifica se a senha é forte, contendo letras e números
+        public static bool SenhaEhForte(string senha)
         {
             if (string.IsNullOrWhiteSpace(senha) || senha.Length < 8)
-                return false; // Retorna false se a senha for nula, vazia ou tiver menos de 8 caracteres
+                return false; // Senha fraca se for nula ou menor que 8 caracteres
 
-            bool contemLetra = false, contemNumero = false;  // Variáveis para verificar se a senha contém pelo menos uma letra e um número
+            bool contemLetra = false, contemNumero = false;
 
+            // Verificação se a senha contém pelo menos uma letra e um número
             foreach (char c in senha)
             {
                 if (char.IsLetter(c)) contemLetra = true;
-                if (char.IsDigit(c)) contemNumero = true; // Percorre cada caractere da senha e define as variáveis contemLetra e contemNumero
+                if (char.IsDigit(c)) contemNumero = true;
 
-                if (contemLetra && contemNumero) return true; // Se encontrar pelo menos uma letra e um número, retorna true
+                // Se encontrar uma letra e um número, a senha é considerada forte
+                if (contemLetra && contemNumero) return true;
             }
 
-            return false;
+            return false; // Senha considerada fraca se não atender aos requisitos
         }
 
-        private string GerarHashSenha(string senha)
+        // Método para gerar um salt aleatório
+        private string GerarSalt()
         {
-            using (var sha256 = SHA256.Create()) // Usa SHA256 para criar o hash
+            byte[] saltBytes = new byte[16];
+            using (var rng = new RNGCryptoServiceProvider())
             {
-                byte[] bytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(senha)); // Converte a senha em um array de bytes e calcula o hash
+                rng.GetBytes(saltBytes);
+            }
+            return Convert.ToBase64String(saltBytes);
+        }
 
-                var builder = new StringBuilder();// Constrói uma string hexadecimal do hash
-                foreach (var b in bytes)
+        // Método para gerar o hash da senha combinando-a com o salt
+        private string GerarHashSenha(string senha, string salt)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                // Combinando a senha com o salt antes de gerar o hash
+                byte[] senhaComSalt = Encoding.UTF8.GetBytes(senha + salt);
+                byte[] hash = sha256.ComputeHash(senhaComSalt); // Calculando o hash
+
+                var builder = new StringBuilder(); // Usando StringBuilder para construir a string do hash
+                foreach (var b in hash)
                 {
-                    builder.Append(b.ToString("x2")); // Cada byte é convertido em um par hexadecimal
+                    builder.Append(b.ToString("x2")); // Convertendo cada byte para hexadecimal
                 }
-                return builder.ToString(); // Retorna a string final do hash
+                return builder.ToString(); // Retornando o hash final
             }
         }
     }
 }
+
