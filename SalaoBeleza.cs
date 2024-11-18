@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using MySqlConnector;
 
 namespace AfroditeClasses.Models
 {
@@ -87,7 +89,7 @@ namespace AfroditeClasses.Models
             servico.CategoriaServico = servicoAtualizado.CategoriaServico;
             servico.PrecoDoServico = servicoAtualizado.PrecoDoServico;
             servico.DescricaoServico = servicoAtualizado.DescricaoServico;
-            servico.TempoDaServico = servicoAtualizado.TempoDaServico; // Atualiza as propriedades do serviço
+            servico.TempoDeServico = servicoAtualizado.TempoDeServico; // Atualiza as propriedades do serviço
             return true; 
         }
 
